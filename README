@@ -1,0 +1,11 @@
+FsWM is a fullscreen window manager.
+
+This software is in the public domain and is provided AS IS, with NO WARRANTY.
+
+USAGE
+
+Win + t + c: launch xterm
+
+Thanks
+
+TinyWM: https://github.com/mackstann/tinywm.git
