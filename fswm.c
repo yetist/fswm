@@ -48,6 +48,7 @@ int main(void)
           if (key == 'c')
           {
             if(fork() == 0) {
+              setsid();
               execl("/bin/sh", "/bin/sh", "-c", "/usr/bin/xterm", (char *)NULL);
             }
           }
