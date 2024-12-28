@@ -146,8 +146,7 @@ int main(int argc, char *argv[])
       XNextEvent(dpy, &ev);
       switch(ev.type) {
         case KeyPress:
-          if ((XkbKeycodeToKeysym(dpy, ev.xkey.keycode, 0, 0) == 't') &&
-            ev.xkey.state & Mod4Mask)
+          if ((XkbKeycodeToKeysym(dpy, ev.xkey.keycode, 0, 0) == 't') && ev.xkey.state & Mod4Mask)
           {
             XEvent event;
             XGrabKey(dpy, AnyKey, AnyModifier, DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
@@ -167,7 +166,6 @@ int main(int argc, char *argv[])
           break;
         case MapRequest:
           {
-            fprintf(stderr, "map request\n");
             XWindowAttributes wa;
             XMapWindow(dpy, ev.xmaprequest.window);
             if (XGetWindowAttributes(dpy, ev.xmaprequest.window, &wa))
@@ -180,27 +178,29 @@ int main(int argc, char *argv[])
           }
           break;
         case ConfigureRequest:
-          int req_x = ev.xconfigurerequest.x;
-          int req_y = ev.xconfigurerequest.y;
-          int req_width = ev.xconfigurerequest.width;
-          int req_height = ev.xconfigurerequest.height;
+          {
+            int req_x = ev.xconfigurerequest.x;
+            int req_y = ev.xconfigurerequest.y;
+            int req_width = ev.xconfigurerequest.width;
+            int req_height = ev.xconfigurerequest.height;
 
-          if (req_x + req_width >= screen_width) {
-            req_width = screen_width - req_x;
-          }
-          if (req_y + req_height >= screen_height) {
-            req_height = screen_height - req_y;
-          }
+            if (req_x + req_width >= screen_width) {
+              req_width = screen_width - req_x;
+            }
+            if (req_y + req_height >= screen_height) {
+              req_height = screen_height - req_y;
+            }
 
-          XConfigureWindow(dpy, ev.xconfigurerequest.window, ev.xconfigurerequest.value_mask, &(XWindowChanges) {
-            .x            = ev.xconfigurerequest.x,
-            .y            = ev.xconfigurerequest.y,
-            .width        = req_width,
-            .height       = req_height,
-            .border_width = ev.xconfigurerequest.border_width,
-            .sibling      = ev.xconfigurerequest.above,
-            .stack_mode   = ev.xconfigurerequest.detail
-          });
+            XConfigureWindow(dpy, ev.xconfigurerequest.window, ev.xconfigurerequest.value_mask, &(XWindowChanges) {
+              .x            = ev.xconfigurerequest.x,
+              .y            = ev.xconfigurerequest.y,
+              .width        = req_width,
+              .height       = req_height,
+              .border_width = ev.xconfigurerequest.border_width,
+              .sibling      = ev.xconfigurerequest.above,
+              .stack_mode   = ev.xconfigurerequest.detail
+            });
+          }
 
           break;
         case ClientMessage:
@@ -213,13 +213,11 @@ int main(int argc, char *argv[])
             }
           }
           break;
-        default:
-          fprintf(stderr, "got event type: %d\n", ev.type);
-          break;
       }
     }
     if (!command_running) {
       if(fork() == 0) {
+        setsid();
         execl("/usr/bin/sh", "sh", "-c", command, (char *)NULL);
       }
       command_running = 1;
