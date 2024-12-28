@@ -137,8 +137,8 @@ int main(int argc, char *argv[])
   }
 
   XSelectInput(dpy, DefaultRootWindow(dpy), SubstructureNotifyMask | SubstructureRedirectMask | KeyPressMask);
-  XGrabKey (dpy, XKeysymToKeycode (dpy, XStringToKeysym("t")), Mod4Mask,
-            DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
+  XGrabKey (dpy, XKeysymToKeycode (dpy, XStringToKeysym("t")), Mod4Mask, DefaultRootWindow(dpy),
+            True, GrabModeAsync, GrabModeAsync);
 
   while(1) {
     while (XPending(dpy)) {
@@ -160,8 +160,8 @@ int main(int argc, char *argv[])
               }
             }
             XUngrabKey(dpy, AnyKey, AnyModifier, DefaultRootWindow(dpy));
-            XGrabKey(dpy, XKeysymToKeycode (dpy, XStringToKeysym("t")), Mod4Mask,
-                     DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
+            XGrabKey(dpy, XKeysymToKeycode (dpy, XStringToKeysym("t")), Mod4Mask, DefaultRootWindow(dpy),
+                     True, GrabModeAsync, GrabModeAsync);
           }
           break;
         case MapRequest:
