@@ -50,7 +50,7 @@ static void signal_handler(int signum)
     default:
       fprintf(stderr, "Caught signal %d. Exiting.", signum);
       /* TERM and INT return a 0 code */
-      exit(!(signal == SIGTERM || signal == SIGINT));
+      exit(!(signum == SIGTERM || signum == SIGINT));
   }
 }
 
@@ -95,9 +95,6 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (solid_color == NULL) {
-    solid_color = "blue";
-  }
   if (command == NULL) {
     command = "xterm";
   }
@@ -129,11 +126,13 @@ int main(int argc, char *argv[])
   XDefineCursor(dpy, DefaultRootWindow(dpy), XCreateFontCursor(dpy, XC_left_ptr));
 
   /* Setup background color */
-  if (XParseColor(dpy, XDefaultColormapOfScreen(screen), solid_color, &ecolor)) {
-    /* Setup background color */
-    if (XAllocColor(dpy,XDefaultColormapOfScreen(screen), &ecolor)) {
-      XSetWindowBackground(dpy, XRootWindowOfScreen(screen), ecolor.pixel);
-      XClearWindow(dpy, XRootWindowOfScreen(screen));
+  if (solid_color != NULL) {
+    if (XParseColor(dpy, XDefaultColormapOfScreen(screen), solid_color, &ecolor)) {
+      /* Setup background color */
+      if (XAllocColor(dpy,XDefaultColormapOfScreen(screen), &ecolor)) {
+        XSetWindowBackground(dpy, XRootWindowOfScreen(screen), ecolor.pixel);
+        XClearWindow(dpy, XRootWindowOfScreen(screen));
+      }
     }
   }
 
@@ -143,7 +142,7 @@ int main(int argc, char *argv[])
 
   while(1) {
     while (XPending(dpy)) {
-      XEvent   ev;
+      XEvent ev;
       XNextEvent(dpy, &ev);
       switch(ev.type) {
         case KeyPress:
@@ -158,7 +157,7 @@ int main(int argc, char *argv[])
             {
               if(fork() == 0) {
                 setsid();
-                execl("/bin/sh", "/bin/sh", "-c", "/usr/bin/xterm", (char *)NULL);
+                execl("/usr/bin/xterm", "xterm", (char *)NULL);
               }
             }
             XUngrabKey(dpy, AnyKey, AnyModifier, DefaultRootWindow(dpy));
@@ -168,28 +167,41 @@ int main(int argc, char *argv[])
           break;
         case MapRequest:
           {
+            fprintf(stderr, "map request\n");
             XWindowAttributes wa;
             XMapWindow(dpy, ev.xmaprequest.window);
             if (XGetWindowAttributes(dpy, ev.xmaprequest.window, &wa))
             {
-              XMoveResizeWindow(dpy, ev.xmaprequest.window,
-                                (screen_width - wa.width)/2,
-                                (screen_height - wa.height)/2,
-                                wa.width, wa.height);
+              XMoveWindow(dpy, ev.xmaprequest.window,
+                          (screen_width - wa.width)/2,
+                          (screen_height - wa.height)/2);
             }
             XRaiseWindow(dpy, ev.xmaprequest.window);
           }
           break;
-        case ConfigureNotify:
-          ev.xconfigurerequest.type = ConfigureNotify;
-          ev.xconfigurerequest.x = (screen_width - ev.xconfigure.width)/2;
-          ev.xconfigurerequest.y = (screen_height - ev.xconfigure.height)/2;
-          ev.xconfigurerequest.width = ev.xconfigure.width;
-          ev.xconfigurerequest.height = ev.xconfigure.height;
-          ev.xconfigurerequest.window = ev.xconfigure.window;
-          ev.xconfigurerequest.border_width = 0;
-          ev.xconfigurerequest.above = None;
-          XSendEvent(dpy, ev.xconfigurerequest.window, False, StructureNotifyMask, (XEvent*)&ev.xconfigurerequest);
+        case ConfigureRequest:
+          int req_x = ev.xconfigurerequest.x;
+          int req_y = ev.xconfigurerequest.y;
+          int req_width = ev.xconfigurerequest.width;
+          int req_height = ev.xconfigurerequest.height;
+
+          if (req_x + req_width >= screen_width) {
+            req_width = screen_width - req_x;
+          }
+          if (req_y + req_height >= screen_height) {
+            req_height = screen_height - req_y;
+          }
+
+          XConfigureWindow(dpy, ev.xconfigurerequest.window, ev.xconfigurerequest.value_mask, &(XWindowChanges) {
+            .x            = ev.xconfigurerequest.x,
+            .y            = ev.xconfigurerequest.y,
+            .width        = req_width,
+            .height       = req_height,
+            .border_width = ev.xconfigurerequest.border_width,
+            .sibling      = ev.xconfigurerequest.above,
+            .stack_mode   = ev.xconfigurerequest.detail
+          });
+
           break;
         case ClientMessage:
           if (ev.xclient.message_type == XInternAtom(dpy, "_NET_WM_STATE", False)) {
@@ -200,6 +212,9 @@ int main(int argc, char *argv[])
               }
             }
           }
+          break;
+        default:
+          fprintf(stderr, "got event type: %d\n", ev.type);
           break;
       }
     }
